@@ -2,7 +2,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { Op } = require('sequelize');
 const db = require('./models');
-// const https = require('https');
 
 const app = express();
 
@@ -18,15 +17,10 @@ app.get('/api/games', (req, res) => db.Game.findAll()
 
 app.post('/api/games', (req, res) => {
   const { publisherId, name, platform, storeId, bundleId, appVersion, isPublished } = req.body;
-  return db.Game.create({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished })
-    .then((game) => res.send(game))
-    .catch((err) => {
-      console.log('***There was an error creating a game', JSON.stringify(err));
-      return res.status(400).send(err);
-    });
+  return createrGame({ publisherId, name, platform, storeId, bundleId, appVersion, isPublished })
 });
 
-// /** @todo check arguments sent and data inside */
+/** @todo check arguments sent and data inside and should have pagination */
 app.post('/api/games/search', (req, res) => {
   const { name, platform } = req.body;
   const queryParams = {
@@ -53,9 +47,10 @@ app.post('/api/games/search', (req, res) => {
     });
 });
 
-// The request will be blocked a certain amount of time and this is not recommended.
+// The request will block certain amount of time and this is not recommended.
 // This is not optimized at all
 app.post('/api/games/populate', async (req, res) => {
+  // Harcoded strings are not recommended -> Should've been in an env or config file.
   const android_game_list_url = 'https://interview-marketing-eng-dev.s3.eu-west-1.amazonaws.com/android.top100.json';
   const ios_game_list_url = 'https://interview-marketing-eng-dev.s3.eu-west-1.amazonaws.com/ios.top100.json';
   const [android_game_list, ios_game_list] = await Promise.all([fetchGameData(android_game_list_url), fetchGameData(ios_game_list_url)])
@@ -98,8 +93,10 @@ app.listen(3000, () => {
   console.log('Server is up on port 3000');
 });
 
-/** Should have been a readStream instead of fetching all the file
- * What if the file is very big
+/**
+ *  This section should have been in another file
+ *  Should have been a readStream instead of fetching all the file
+ *  What if the file is very big ?
 */
 async function fetchGameData(url) {
   try {
@@ -109,7 +106,6 @@ async function fetchGameData(url) {
     console.err('*** Error when fetching url=%s ***', url)
     throw new Error('fetch-url-error')
   }
-
 }
 
 function mapGameData(game_list) {
