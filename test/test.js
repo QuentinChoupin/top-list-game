@@ -36,6 +36,7 @@ describe('POST /api/games', function () {
     });
 });
 
+
 /**
  * Testing get all games endpoint
  */

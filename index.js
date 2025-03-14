@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { Op } = require('sequelize');
 const db = require('./models');
+// const https = require('https');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.post('/api/games', (req, res) => {
     });
 });
 
+/** @todo check arguments sent and data inside */
 app.post('/api/games/search', (req, res) => {
   const { name, platform } = req.body;
   const queryParams = {
@@ -43,7 +45,6 @@ app.post('/api/games/search', (req, res) => {
   return db.Game.findAll({
     where: queryParams,
   }).then((games) => {
-    console.log('games', games);
     return res.send(games);
   })
     .catch((err) => {
@@ -51,6 +52,21 @@ app.post('/api/games/search', (req, res) => {
       res.status(404).send(err);
     });
 });
+
+// The request will be blocked a certain amount of time and this is not recommended.
+// This is not optimized at all
+// app.post('/api/games/populate', async (req, res) => {
+//   const android_game_list_url = 'https://interview-marketing-eng-dev.s3.eu-west-1.amazonaws.com/android.top100.json';
+//   const ios_game_list_url = 'https://interview-marketing-eng-dev.s3.eu-west-1.amazonaws.com/ios.top100.json';
+//   const [android_game_list, ios_game_list] = await Promise.all([fetchGameData(android_game_list_url), fetchGameData(ios_game_list_url)])
+//   const global_game_list = android_game_list.concat(ios_game_list)
+//   for (const game_list in global_game_list) {
+//     const mapped_game_data = mapGameData(game_list)
+//     // The bulk insert should have been done on every valid chunk we fetch
+//     // await db.Game.bulkInsert(mapped_game_data)
+//   }
+//   return res.status(200)
+// });
 
 app.delete('/api/games/:id', (req, res) => {
   // eslint-disable-next-line radix
@@ -82,5 +98,47 @@ app.put('/api/games/:id', (req, res) => {
 app.listen(3000, () => {
   console.log('Server is up on port 3000');
 });
+
+/** Should have been a readStream instead of fetching all the file
+ * What if the file is very big
+*/
+// async function fetchGameData(url) {
+//   try {
+//     return new Promise((resolve, reject) => {
+//       https.get(url, (response) => {
+//       if (response.statusCode !== 200) {
+//         console.error('*** Invalid fetch url ***')
+//         reject()    
+//       }
+//       let processed_chunks = null
+//       response.on('data', (chunk) => {
+//         processed_chunks += chunk
+//       })
+//       response.on('end', () => {
+//         console.log('file processed')
+//         const game_data = JSON.parse(processed_chunks.toString())
+//         resolve(game_data)
+//       })
+//     }).on('close', () => {
+//       console.log('file processed')
+//       })
+//     })
+//   } catch (err) {
+//     console.log('***Error populating data for games', JSON.stringify(err));
+//     res.status(400).send(err);
+//   }
+// }
+
+// function mapGameData(game_list) {
+//   return game_list.map(game => ({
+//       publisherId: game.publisherId,
+//       name: game.name,
+//       platform: game.os,
+//       storeId: game.app_id,
+//       bundleId: game.bundle_id,
+//       appVersion: game.version,
+//       isPublished: new Date(game.releaseDate).getTime() > new Date().getTime()
+//   }))
+// }
 
 module.exports = app;
