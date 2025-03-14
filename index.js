@@ -21,46 +21,48 @@ app.post('/api/games', (req, res) => {
 });
 
 // /** @todo check arguments sent and data inside and should have pagination */
-// app.post('/api/games/search', (req, res) => {
-//   const { name, platform } = req.body;
-//   const queryParams = {
-//     ...(name && {
-//       name: {
-//         [Op.like]: `%${name}%`,
-//       },
-//     }
-//     ),
-//     ...(platform && {
-//       platform: {
-//         [Op.like]: `%${platform}%`,
-//       },
-//     }),
-//   };
-//   return db.Game.findAll({
-//     where: queryParams,
-//   }).then((games) => {
-//     return res.send(games);
-//   })
-//     .catch((err) => {
-//       console.log('***No game was found', JSON.stringify(err));
-//       res.status(404).send(err);
-//     });
-// });
+app.post('/api/games/search', (req, res) => {
+  const { name, platform } = req.body;
+  const queryParams = {
+    ...(name && {
+      name: {
+        [Op.like]: `%${name}%`,
+      },
+    }
+    ),
+    ...(platform && {
+      platform: {
+        [Op.like]: `%${platform}%`,
+      },
+    }),
+  };
+  return db.Game.findAll({
+    where: queryParams,
+  }).then((games) => {
+    return res.send(games);
+  })
+    .catch((err) => {
+      console.log('***No game was found', JSON.stringify(err));
+      res.status(404).send(err);
+    });
+});
 
 // The request will block certain amount of time and this is not recommended.
 // This is not optimized at all
-app.post('/api/games/search', async (req, res) => {
+app.post('/api/games/populate', async (req, res) => {
   // Harcoded strings are not recommended -> Should've been in an env or config file.
   const android_game_list_url = 'https://interview-marketing-eng-dev.s3.eu-west-1.amazonaws.com/android.top100.json';
   const ios_game_list_url = 'https://interview-marketing-eng-dev.s3.eu-west-1.amazonaws.com/ios.top100.json';
-  const [android_game_list, ios_game_list] = await Promise.all([fetchGameData(android_game_list_url), fetchGameData(ios_game_list_url)])
+  const [android_game_list, ios_game_list] = await Promise.all([
+    fetchGameData(android_game_list_url),
+    fetchGameData(ios_game_list_url)
+  ])
   const global_game_list = android_game_list.concat(ios_game_list)
   let mapped_game_list = []
   for (const games of global_game_list) {
     const mapped_games = mapGameData(games)
     mapped_game_list.push(...mapped_games)
   }
-  console.log('game list 1', mapped_game_list[0])
   await db.Game.bulkCreate(mapped_game_list)
   return res.status(200)
 });
@@ -113,7 +115,7 @@ async function fetchGameData(url) {
 
 function mapGameData(game_list) {
   return game_list.map(game => ({
-      publisherId: game.published_id,
+      publisherId: game.publisher_id?.toString(),
       name: game.name,
       platform: game.os,
       storeId: game.app_id,
