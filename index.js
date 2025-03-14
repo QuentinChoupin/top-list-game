@@ -102,8 +102,14 @@ app.listen(3000, () => {
  * What if the file is very big
 */
 async function fetchGameData(url) {
-  const fetched_data = await fetch(url)
-  return fetched_data.json()
+  try {
+    const fetched_data = await fetch(url)
+    return fetched_data.json()
+  } catch (err) {
+    console.err('*** Error when fetching url=%s ***', url)
+    throw new Error('fetch-url-error')
+  }
+
 }
 
 function mapGameData(game_list) {
